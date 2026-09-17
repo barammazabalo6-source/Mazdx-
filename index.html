@@ -1,9 +1,16 @@
+
 <!doctype html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MazDX &mdash; Boutique</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0B2027">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -88,7 +95,7 @@
 
 <script>
 // ==== CONFIGURATION : à remplacer par le lien CSV de ton Google Sheet publié ====
-var SHEET_CSV_URL = "";
+var SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1fVm8H1LhsxrDlpWzoAs_ntllgJZCrD41LLIZYcaV4_k/export?format=csv&gid=0";
 var WHATSAPP = "22870762545";
 // ================================================================================
 
@@ -126,17 +133,37 @@ function parseCsv(text){
   return rows;
 }
 
+function normalizeHeader(h){
+  return h.trim().toLowerCase()
+    .replace(/[éèê]/g, 'e')
+    .replace(/[àâ]/g, 'a')
+    .replace(/[ôö]/g, 'o')
+    .replace(/\s+/g, '');
+}
+
 function csvToProducts(text){
   var rows = parseCsv(text).filter(function(r){ return r.length && r.some(function(c){ return c.trim() !== ''; }); });
   if (!rows.length) return [];
-  var header = rows[0].map(function(h){ return h.trim().toLowerCase(); });
+  var header = rows[0].map(normalizeHeader);
+  var nameKeys = ['name','nom'];
+  var detailKeys = ['pricedetail','prixdetail'];
+  var grosKeys = ['pricegros','prixgros'];
+  var imageKeys = ['image','photo'];
+  var glyphKeys = ['glyph','icone','icon'];
+  function findCol(keys){
+    for (var i = 0; i < keys.length; i++){
+      var pos = header.indexOf(keys[i]);
+      if (pos > -1) return pos;
+    }
+    return -1;
+  }
   var idx = {
     id: header.indexOf('id'),
-    name: header.indexOf('name'),
-    priceDetail: header.indexOf('pricedetail'),
-    priceGros: header.indexOf('pricegros'),
-    image: header.indexOf('image'),
-    glyph: header.indexOf('glyph')
+    name: findCol(nameKeys),
+    priceDetail: findCol(detailKeys),
+    priceGros: findCol(grosKeys),
+    image: findCol(imageKeys),
+    glyph: findCol(glyphKeys)
   };
   var out = [];
   for (var i = 1; i < rows.length; i++){
@@ -285,6 +312,12 @@ function handleOrderClick(e){
 }
 
 loadProducts();
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
