@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MazDX &mdash; Boutique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B2027; --surface: #12313A; --surface-2: #17404B;
+    --mango: #F4A521; --papaya: #E85C41; --whatsapp: #25D366;
+    --ink: #F5EFE3; --ink-muted: #9FB4B8; --line: rgba(245,239,227,0.12);
+  }
+  *{ box-sizing: border-box; }
+  body{ margin:0; background: var(--bg); color: var(--ink); font-family:'Work Sans',system-ui,sans-serif; padding-bottom:110px; min-height:100vh; }
+  .wrap{ max-width:480px; margin:0 auto; padding:0 16px; }
+  header.hero{ padding:36px 16px 28px; position:relative; overflow:hidden; background: radial-gradient(circle at 85% -10%, rgba(244,165,33,0.35), transparent 55%); }
+  header.hero h1{ font-family:'Bebas Neue',sans-serif; font-size:3rem; letter-spacing:0.03em; margin:0; line-height:0.95; color: var(--mango); }
+  header.hero p{ margin:8px 0 0; color: var(--ink-muted); font-size:0.98rem; max-width:32ch; }
+  .products{ display:flex; flex-direction:column; gap:14px; margin-top:8px; }
+  .product{ background: var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; display:grid; grid-template-columns:68px 1fr auto; gap:14px; align-items:center; }
+  .product .glyph{ width:68px; height:68px; border-radius:16px; background: var(--surface-2); position:relative; overflow:hidden; flex-shrink:0; }
+  .product .glyph img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; cursor:pointer; }
+  .product .glyph .glyph-fallback{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:2rem; }
+  .product .info h3{ margin:0 0 4px; font-size:1.08rem; font-weight:600; }
+  .product .price-group{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+  .product .price{ display:inline-block; font-family:'Bebas Neue',sans-serif; letter-spacing:0.02em; color: var(--mango); background: rgba(244,165,33,0.12); border:1px solid rgba(244,165,33,0.4); border-radius:999px; padding:3px 12px; font-size:1.05rem; }
+  .product .price.gros{ color: var(--papaya); background: rgba(232,92,65,0.12); border-color: rgba(232,92,65,0.4); }
+  .price-toggle{ display:flex; gap:6px; margin-top:8px; }
+  .price-toggle button{ flex:1; font-size:0.72rem; padding:4px 6px; border-radius:999px; border:1px solid var(--line); background: var(--surface-2); color: var(--ink-muted); cursor:pointer; }
+  .price-toggle button.active{ background: var(--mango); color:#1a1200; border-color: var(--mango); font-weight:600; }
+  .stepper{ display:flex; align-items:center; gap:8px; justify-self:end; }
+  .stepper button{ width:32px; height:32px; border-radius:50%; border:none; background: var(--surface-2); color: var(--ink); font-size:1.1rem; cursor:pointer; line-height:1; }
+  .stepper button.plus{ background: var(--mango); color:#1a1200; font-weight:700; }
+  .stepper span{ min-width:18px; text-align:center; font-weight:600; }
+  .empty-state, .error-state{ text-align:center; color: var(--ink-muted); padding:40px 16px; border:1px dashed var(--line); border-radius:16px; }
+  .cartbar{ position:fixed; left:0; right:0; bottom:0; background: var(--surface); border-top:1px solid var(--line); padding:12px 16px calc(12px + env(safe-area-inset-bottom)); box-shadow:0 -8px 24px rgba(0,0,0,0.35); }
+  .cartbar .row{ max-width:480px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .cartbar .total{ font-size:0.95rem; color: var(--ink-muted); cursor:pointer; }
+  .cartbar .total b{ color: var(--ink); font-size:1.15rem; display:block; }
+  .cartbar .total .see-cart{ display:block; font-size:0.72rem; text-decoration:underline; }
+  .cartbar a.order{ background: var(--whatsapp); color:#06210F; border:none; border-radius:999px; padding:13px 22px; font-weight:700; font-size:0.98rem; cursor:pointer; white-space:nowrap; text-decoration:none; display:inline-block; }
+  #lightbox{ display:none; position:fixed; inset:0; background: rgba(6,15,18,0.94); z-index:80; align-items:center; justify-content:center; padding:24px; }
+  #lightbox.open{ display:flex; }
+  #lightbox img{ max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,0.5); }
+  #cart-modal{ display:none; position:fixed; inset:0; background: rgba(6,15,18,0.92); z-index:70; align-items:flex-end; justify-content:center; }
+  #cart-modal.open{ display:flex; }
+  #cart-modal .sheet{ width:100%; max-width:480px; background: var(--surface); border-radius:20px 20px 0 0; padding:20px 16px calc(20px + env(safe-area-inset-bottom)); max-height:80vh; overflow-y:auto; }
+  #cart-modal h2{ font-family:'Bebas Neue',sans-serif; letter-spacing:0.03em; color: var(--mango); margin:0 0 12px; }
+  .cart-line{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .cart-line .name{ font-size:0.95rem; }
+  .cart-line .name small{ display:block; color: var(--ink-muted); font-size:0.78rem; }
+  .cart-empty{ color: var(--ink-muted); text-align:center; padding:20px 0; }
+  .cart-modal-total{ display:flex; justify-content:space-between; align-items:center; margin:14px 0; font-size:1.1rem; }
+  .cart-modal-total b{ color: var(--mango); font-family:'Bebas Neue',sans-serif; font-size:1.4rem; }
+  .close-link{ display:block; margin:14px auto 0; background:none; border:none; color: var(--ink-muted); text-decoration:underline; cursor:pointer; text-align:center; width:100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <h1>MazDX</h1>
+    <p>Boissons fra&icirc;ches, command&eacute;es en un clin d&rsquo;oeil. Choisis, on t&rsquo;organise la livraison sur WhatsApp.</p>
+  </header>
+  <div class="products" id="products-container"><div class="empty-state">Chargement...</div></div>
+</div>
+
+<div class="cartbar">
+  <div class="row">
+    <div class="total" onclick="openCartModal()">Total<b><span id="cart-total">0</span> F CFA</b><span class="see-cart">Voir le panier</span></div>
+    <a id="order-link" class="order" href="javascript:void(0)" target="_blank" rel="noopener" onclick="return handleOrderClick(event)">Commander sur WhatsApp</a>
+  </div>
+</div>
+
+<div id="lightbox" onclick="closeLightbox()"><img id="lightbox-img" src="" alt=""></div>
+
+<div id="cart-modal">
+  <div class="sheet">
+    <h2>Ton panier</h2>
+    <div id="cart-modal-list"></div>
+    <div class="cart-modal-total">Total <b><span id="cart-modal-total">0</span> F CFA</b></div>
+    <a id="cart-modal-order-link" class="order" style="display:block;text-align:center;" href="javascript:void(0)" target="_blank" rel="noopener" onclick="return handleOrderClick(event)">Confirmer sur WhatsApp</a>
+    <button class="close-link" onclick="closeCartModal()">Continuer mes achats</button>
+  </div>
+</div>
+
+<script>
+// ==== CONFIGURATION : à remplacer par le lien CSV de ton Google Sheet publié ====
+var SHEET_CSV_URL = "";
+var WHATSAPP = "22870762545";
+// ================================================================================
+
+var PRODUCTS = [];
+var CART = {};
+var MODE = {};
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+  });
+}
+
+function parseCsv(text){
+  var rows = [];
+  var row = [];
+  var field = '';
+  var inQuotes = false;
+  for (var i = 0; i < text.length; i++){
+    var c = text[i];
+    if (inQuotes){
+      if (c === '"'){
+        if (text[i+1] === '"'){ field += '"'; i++; }
+        else { inQuotes = false; }
+      } else { field += c; }
+    } else {
+      if (c === '"'){ inQuotes = true; }
+      else if (c === ','){ row.push(field); field = ''; }
+      else if (c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c === '\r'){ /* skip */ }
+      else { field += c; }
+    }
+  }
+  if (field.length || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+function csvToProducts(text){
+  var rows = parseCsv(text).filter(function(r){ return r.length && r.some(function(c){ return c.trim() !== ''; }); });
+  if (!rows.length) return [];
+  var header = rows[0].map(function(h){ return h.trim().toLowerCase(); });
+  var idx = {
+    id: header.indexOf('id'),
+    name: header.indexOf('name'),
+    priceDetail: header.indexOf('pricedetail'),
+    priceGros: header.indexOf('pricegros'),
+    image: header.indexOf('image'),
+    glyph: header.indexOf('glyph')
+  };
+  var out = [];
+  for (var i = 1; i < rows.length; i++){
+    var r = rows[i];
+    var name = idx.name > -1 ? (r[idx.name] || '').trim() : '';
+    if (!name) continue;
+    var priceDetail = idx.priceDetail > -1 ? parseInt(r[idx.priceDetail], 10) : NaN;
+    if (isNaN(priceDetail)) continue;
+    var priceGrosVal = idx.priceGros > -1 ? parseInt(r[idx.priceGros], 10) : NaN;
+    out.push({
+      id: idx.id > -1 && r[idx.id] ? r[idx.id].trim() : String(i),
+      name: name,
+      priceDetail: priceDetail,
+      priceGros: isNaN(priceGrosVal) ? null : priceGrosVal,
+      image: idx.image > -1 ? (r[idx.image] || '').trim() : '',
+      glyph: idx.glyph > -1 && r[idx.glyph] ? r[idx.glyph].trim() : String.fromCodePoint(129388)
+    });
+  }
+  return out;
+}
+
+function loadProducts(){
+  fetch(SHEET_CSV_URL, { cache: 'no-store' })
+    .then(function(res){
+      if (!res.ok) throw new Error('bad status');
+      return res.text();
+    })
+    .then(function(text){
+      PRODUCTS = csvToProducts(text);
+      render();
+    })
+    .catch(function(){
+      document.getElementById('products-container').innerHTML =
+        '<div class="error-state">Impossible de charger les produits pour le moment.<br>V\u00e9rifie ta connexion et r\u00e9essaie.</div>';
+    });
+}
+
+function productVisual(p){
+  var fallback = escapeHtml(p.glyph || String.fromCodePoint(129388));
+  if (p.image){
+    var src = escapeHtml(p.image);
+    return '<img src="' + src + '" alt="" onclick="openLightbox(\'' + src + '\')" ' +
+      'onerror="this.style.display=\'none\'; this.nextElementSibling.style.display=\'flex\';">' +
+      '<span class="glyph-fallback" style="display:none;">' + fallback + '</span>';
+  }
+  return '<span class="glyph-fallback" style="display:flex;">' + fallback + '</span>';
+}
+
+function priceForMode(p, mode){
+  if (mode === 'gros' && p.priceGros) return p.priceGros;
+  return p.priceDetail;
+}
+
+function render(){
+  var container = document.getElementById('products-container');
+  if (!PRODUCTS.length){
+    container.innerHTML = '<div class="empty-state">Aucun produit pour le moment.</div>';
+  } else {
+    container.innerHTML = PRODUCTS.map(function(p){
+      var qty = CART[p.id] || 0;
+      var mode = MODE[p.id] || 'detail';
+      var priceBadges = '<span class="price">D&eacute;tail : ' + p.priceDetail + ' F</span>';
+      if (p.priceGros) priceBadges += '<span class="price gros">Gros : ' + p.priceGros + ' F</span>';
+      var toggle = '';
+      if (p.priceGros){
+        toggle = '<div class="price-toggle">' +
+          '<button class="' + (mode === 'detail' ? 'active' : '') + '" onclick="setMode(\'' + p.id + '\',\'detail\')">D&eacute;tail</button>' +
+          '<button class="' + (mode === 'gros' ? 'active' : '') + '" onclick="setMode(\'' + p.id + '\',\'gros\')">Gros</button>' +
+          '</div>';
+      }
+      return '<div class="product">' +
+          '<div class="glyph">' + productVisual(p) + '</div>' +
+          '<div class="info"><h3>' + escapeHtml(p.name) + '</h3>' +
+            '<div class="price-group">' + priceBadges + '</div>' + toggle +
+          '</div>' +
+          '<div class="stepper">' +
+            '<button onclick="changeQty(\'' + p.id + '\',-1)">&minus;</button>' +
+            '<span id="qty-' + p.id + '">' + qty + '</span>' +
+            '<button class="plus" onclick="changeQty(\'' + p.id + '\',1)">+</button>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+  }
+  updateCart();
+}
+
+function setMode(id, mode){ MODE[id] = mode; render(); }
+
+function changeQty(id, delta){
+  CART[id] = Math.max(0, (CART[id] || 0) + delta);
+  var el = document.getElementById('qty-' + id);
+  if (el) el.textContent = CART[id];
+  updateCart();
+}
+
+function openLightbox(src){
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox(){ document.getElementById('lightbox').classList.remove('open'); }
+function openCartModal(){ document.getElementById('cart-modal').classList.add('open'); }
+function closeCartModal(){ document.getElementById('cart-modal').classList.remove('open'); }
+
+function updateCart(){
+  var total = 0, lines = [], modalRows = '';
+  PRODUCTS.forEach(function(p){
+    var qty = CART[p.id] || 0;
+    if (qty > 0){
+      var mode = MODE[p.id] || 'detail';
+      var unitPrice = priceForMode(p, mode);
+      var subtotal = unitPrice * qty;
+      total += subtotal;
+      var label = mode === 'gros' ? (p.name + ' (gros)') : p.name;
+      lines.push(qty + ' x ' + label + ' = ' + subtotal + ' F CFA');
+      modalRows += '<div class="cart-line"><div class="name">' + escapeHtml(p.name) +
+        (mode === 'gros' ? ' <small>Prix gros</small>' : '<small>' + unitPrice + ' F / unit\u00e9</small>') + '</div>' +
+        '<div class="stepper"><button onclick="changeQty(\'' + p.id + '\',-1)">&minus;</button>' +
+        '<span>' + qty + '</span><button class="plus" onclick="changeQty(\'' + p.id + '\',1)">+</button></div></div>';
+    }
+  });
+  document.getElementById('cart-total').textContent = total;
+  var modalList = document.getElementById('cart-modal-list');
+  modalList.innerHTML = modalRows || '<div class="cart-empty">Ton panier est vide.</div>';
+  document.getElementById('cart-modal-total').textContent = total;
+  var href = 'javascript:void(0)';
+  var hasItems = lines.length > 0;
+  if (hasItems){
+    var message = 'Bonjour, je souhaite commander :\n' + lines.join('\n') + '\n\nTotal : ' + total + ' F CFA';
+    href = 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(message);
+  }
+  ['order-link','cart-modal-order-link'].forEach(function(id){
+    var link = document.getElementById(id);
+    link.href = href;
+    if (hasItems) link.setAttribute('data-has-items','1'); else link.removeAttribute('data-has-items');
+  });
+}
+
+function handleOrderClick(e){
+  var link = e.currentTarget || e.target;
+  if (!link || !link.getAttribute('data-has-items')){
+    e.preventDefault();
+    alert('Choisis au moins un produit avant de commander.');
+    return false;
+  }
+  return true;
+}
+
+loadProducts();
+</script>
+</body>
+</html>
